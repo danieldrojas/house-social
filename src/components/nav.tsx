@@ -3,17 +3,13 @@ import { auth, signOut } from "@/lib/auth";
 import { Button } from "@/components/ui";
 
 export async function Nav() {
-  let session: Awaited<ReturnType<typeof auth>> = null;
-  try {
-    session = await auth();
-  } catch {
-    session = null;
-  }
+  const session = await auth().catch(() => null);
+  const loggedIn = Boolean(session && "user" in session && session.user);
 
   return (
     <header className="sticky top-0 z-40 border-b border-stone-200/80 bg-[#faf7f2]/90 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-4">
-        <Link href={session ? "/feed" : "/"} className="flex items-center gap-2">
+        <Link href={loggedIn ? "/feed" : "/"} className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-stone-900 text-sm text-white">
             ⌂
           </span>
@@ -22,7 +18,7 @@ export async function Nav() {
           </span>
         </Link>
 
-        {session ? (
+        {loggedIn ? (
           <nav className="flex items-center gap-1 sm:gap-2">
             <Link
               href="/feed"
