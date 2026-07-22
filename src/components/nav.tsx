@@ -1,10 +1,14 @@
 import Link from "next/link";
-import { auth } from "@/lib/auth";
-import { logoutAction } from "@/app/actions/auth";
+import { auth, signOut } from "@/lib/auth";
 import { Button } from "@/components/ui";
 
 export async function Nav() {
-  const session = await auth();
+  let session: Awaited<ReturnType<typeof auth>> = null;
+  try {
+    session = await auth();
+  } catch {
+    session = null;
+  }
 
   return (
     <header className="sticky top-0 z-40 border-b border-stone-200/80 bg-[#faf7f2]/90 backdrop-blur">
@@ -35,7 +39,12 @@ export async function Nav() {
             <Link href="/houses/new">
               <Button className="!py-1.5">New house</Button>
             </Link>
-            <form action={logoutAction}>
+            <form
+              action={async () => {
+                "use server";
+                await signOut({ redirectTo: "/" });
+              }}
+            >
               <Button type="submit" variant="ghost" className="!py-1.5">
                 Log out
               </Button>
