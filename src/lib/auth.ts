@@ -26,18 +26,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const parsed = credentialsSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
-        const email = parsed.data.email.toLowerCase().trim();
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) return null;
+        try {
+          const email = parsed.data.email.toLowerCase().trim();
+          const user = await prisma.user.findUnique({ where: { email } });
+          if (!user) return null;
 
-        const valid = await compare(parsed.data.password, user.passwordHash);
-        if (!valid) return null;
+          const valid = await compare(parsed.data.password, user.passwordHash);
+          if (!valid) return null;
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        };
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+          };
+        } catch (error) {
+          // Surface DB/config problems in server logs instead of a silent fail
+          console.error("authorize/db error", error);
+          return null;
+        }
       },
     }),
   ],
@@ -55,5 +61,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
   },
-  secret: process.env.AUTH_SECRET,
+  // AUTH_SECRET is required on Vercel. NEXTAUTH_SECRET is accepted as a fallback name.
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
 });

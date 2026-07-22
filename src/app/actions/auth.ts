@@ -33,19 +33,28 @@ export async function signupAction(
   }
 
   const email = parsed.data.email.toLowerCase().trim();
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    return { error: "An account with that email already exists." };
-  }
 
-  const passwordHash = await hash(parsed.data.password, 10);
-  await prisma.user.create({
-    data: {
-      name: parsed.data.name.trim(),
-      email,
-      passwordHash,
-    },
-  });
+  try {
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return { error: "An account with that email already exists." };
+    }
+
+    const passwordHash = await hash(parsed.data.password, 10);
+    await prisma.user.create({
+      data: {
+        name: parsed.data.name.trim(),
+        email,
+        passwordHash,
+      },
+    });
+  } catch (error) {
+    console.error("signup db error", error);
+    return {
+      error:
+        "Could not create account (database). Check DATABASE_URL on Vercel and redeploy.",
+    };
+  }
 
   try {
     await signIn("credentials", {
@@ -55,7 +64,10 @@ export async function signupAction(
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: "Account created, but sign-in failed. Try logging in." };
+      return {
+        error:
+          "Account may exist, but sign-in failed. Check AUTH_SECRET on Vercel, then try Log in.",
+      };
     }
     throw error;
   }
@@ -84,9 +96,21 @@ export async function loginAction(
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: "Invalid email or password." };
+      // CredentialsSignin = wrong password/user; Configuration = missing env on server
+      const code = error.type || error.name;
+      if (code === "Configuration" || String(error).includes("Configuration")) {
+        return {
+          error:
+            "Server auth is misconfigured (AUTH_SECRET / DATABASE_URL). Fix env vars on Vercel and redeploy.",
+        };
+      }
+      return {
+        error:
+          "Invalid email or password. Try demo@housesocial.test / password123, or Sign up.",
+      };
     }
-    throw error;
+    console.error("login error", error);
+    return { error: "Login failed. Please try again." };
   }
 
   return {};
