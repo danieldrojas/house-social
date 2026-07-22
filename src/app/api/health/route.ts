@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ensureBootstrap } from "@/lib/bootstrap";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -14,11 +15,18 @@ export async function GET() {
   let dbOk = false;
   let dbError: string | null = null;
   let userCount: number | null = null;
+  let seeded = false;
 
   if (hasDatabaseUrl) {
     try {
-      userCount = await prisma.user.count();
-      dbOk = true;
+      const boot = await ensureBootstrap();
+      seeded = boot.seeded;
+      if (!boot.ok && "error" in boot) {
+        dbError = boot.error ?? "bootstrap failed";
+      } else {
+        userCount = await prisma.user.count();
+        dbOk = true;
+      }
     } catch (e) {
       dbError = e instanceof Error ? e.message : "Database connection failed";
     }
@@ -37,10 +45,11 @@ export async function GET() {
         : "MISSING",
       database: dbOk ? "connected" : "FAILED",
       userCount,
+      seeded,
       dbError,
       tip: !ok
-        ? "In Vercel → Settings → Environment Variables, set AUTH_SECRET and DATABASE_URL (postgres), then Redeploy."
-        : "Config looks good. Use demo@housesocial.test / password123 or Sign up.",
+        ? "Vercel → Settings → Environment Variables: set AUTH_SECRET and DATABASE_URL (postgres://...), then Redeploy."
+        : "Config looks good. demo@housesocial.test / password123 or Sign up.",
     },
     { status: ok ? 200 : 503 },
   );
