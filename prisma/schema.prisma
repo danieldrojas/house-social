@@ -3,7 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  // Use PostgreSQL on Vercel (Neon free). Locally you can still use
+  // a Neon URL, or a local Postgres instance.
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

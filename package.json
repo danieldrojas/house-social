@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
     "build": "prisma generate && next build",
+    "postdeploy:db": "prisma db push",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint",
     "db:push": "prisma db push",
