@@ -153,8 +153,7 @@ export async function loginAction(
   } catch (error) {
     if (isRedirectError(error)) throw error;
     if (error instanceof AuthError) {
-      const code = error.type || error.name;
-      if (code === "Configuration" || String(error).includes("Configuration")) {
+      if (String(error.type ?? error.name ?? error).includes("Configuration")) {
         return {
           error:
             "Server auth misconfigured. Set AUTH_SECRET on Vercel and Redeploy.",
